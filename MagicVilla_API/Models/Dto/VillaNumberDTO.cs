@@ -11,5 +11,9 @@ namespace MagicVilla_API.Models.Dto
         public int VillaID { get; set; }
 
         public string SpecialDetails { get; set; }
+
+        // Dit doen we alleen in VillaNumberDTO, omdat we alleen hier de details van de Villa krijgen.
+        // Als je VillaNumber open kom je ook deze navigatie property tegen.
+        public VillaDTO Villa { get; set; }
     }
 }

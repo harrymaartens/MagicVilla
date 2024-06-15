@@ -5,8 +5,9 @@ namespace MagicVilla_API.Repository.IRepostiory
 {
     public interface IRepository<T> where T : class
     {
-        Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null);
-        Task<T> GetAsync(Expression<Func<T, bool>> filter = null, bool tracked = true);
+        // Deze toevoeging: public Villa Villa { get; set; } id nodig voor deze navigatie property: public Villa Villa { get; set; }
+        Task<List<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null, string? includeProperties = null);
+        Task<T> GetAsync(Expression<Func<T, bool>> filter = null, bool tracked = true, string? includeProperties = null);
         Task CreateAsync(T entity);
         Task RemoveAsync(T entity);
         Task SaveAsync();

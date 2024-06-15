@@ -12,6 +12,9 @@ namespace MagicVilla_API.Models
         [ForeignKey("Villa")]
         public int VillaID { get; set; }
 
+        // Dit doen we alleen in VillaNumberDTO, omdat we alleen hier de details van de Villa krijgen.
+        // Als je VillaNumberDTO open kom je ook deze navigatie property tegen. Dus als hier gegevens ingevuld worden
+        // wordt die automatisch verwerkt in de desbetreffende Villa.
         public Villa Villa { get; set; }
 
         public string SpecialDetails { get; set; }
