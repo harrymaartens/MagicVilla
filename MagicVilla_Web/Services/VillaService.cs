@@ -8,10 +8,11 @@ namespace MagicVilla_Web.Services
     // BaseService vereist een clientFactory
     public class VillaService : BaseService, IVillaService
     {
+        // IHttpClientFactory is noodzakelijk voor de VillaService.
         private readonly IHttpClientFactory _clientFactory;
         private string villaUrl;
 
-        // Dependency Injection
+        // Dependency Injection, configuration is vereist voor villaUrl uit appsettings
         public VillaService(IHttpClientFactory clientFactory, IConfiguration configuration) : base(clientFactory)
         {
             _clientFactory = clientFactory;

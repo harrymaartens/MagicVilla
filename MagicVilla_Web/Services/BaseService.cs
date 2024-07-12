@@ -9,6 +9,8 @@ namespace MagicVilla_Web.Services
     public class BaseService : IBaseService
     {
         public APIResponse responseModel { get; set; }
+
+        // De HttpClientFactory is onderdeel van DI
         public IHttpClientFactory httpClient { get; set; }
         
         public BaseService(IHttpClientFactory httpClient)
@@ -27,9 +29,11 @@ namespace MagicVilla_Web.Services
                 message.RequestUri = new Uri(apiRequest.Url);
                 if (apiRequest.Data != null)
                 {
+                    // Data will not be null in POST/PUT HTTP calls.
                     message.Content = new StringContent(JsonConvert.SerializeObject(apiRequest.Data),
                         Encoding.UTF8, "application/json");
                 }
+                // Een API request is een enum, die we vinden in SD, waardoor we een switch condition kunnen maken.
                 switch (apiRequest.ApiType)
                 {
                     case SD.ApiType.POST:
@@ -50,10 +54,13 @@ namespace MagicVilla_Web.Services
                 // Bij een error zet hier een breakpoint, zodat je kan zien waar het fout gaat.
                 apiResponse = await client.SendAsync(message);
 
+                // This API content will have to deserialize that and once we deserialize it should
+                // be the model which is APIResponse. 
                 var apiContent = await apiResponse.Content.ReadAsStringAsync();
                 try
                 {
-					APIResponse ApiResponse = JsonConvert.DeserializeObject<APIResponse>(apiContent);
+                    // So we will deserialize that object and we will call the variable as APIResponse. 
+                    APIResponse ApiResponse = JsonConvert.DeserializeObject<APIResponse>(apiContent);
                     if(apiResponse.StatusCode == System.Net.HttpStatusCode.BadRequest
                         || apiResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
                     {
