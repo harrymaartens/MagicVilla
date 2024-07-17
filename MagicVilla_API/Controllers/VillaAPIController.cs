@@ -14,8 +14,9 @@ using System.Net;
 namespace MagicVilla_API.Controllers
 {
     //[Route("api/[controller]")]
-    [Route("api/VillaAPI")]
+    [Route("api/v{version:apiVersion}/VillaAPI")]
     [ApiController]
+    [ApiVersion("1.0")]
     public class VillaAPIController : ControllerBase
     {
         // Alle ReturnTypes worden nu _response
