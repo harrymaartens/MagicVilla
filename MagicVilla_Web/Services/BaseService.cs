@@ -2,6 +2,7 @@
 using MagicVilla_Web.Models;
 using MagicVilla_Web.Services.IServices;
 using Newtonsoft.Json;
+using System.Net.Http.Headers;
 using System.Text;
 
 namespace MagicVilla_Web.Services
@@ -50,6 +51,12 @@ namespace MagicVilla_Web.Services
                         break;
                 }
                 HttpResponseMessage apiResponse = null;
+
+                // API can validate
+                if (!string.IsNullOrEmpty(apiRequest.Token))
+                { 
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiRequest.Token);
+                }
 
                 // Bij een error zet hier een breakpoint, zodat je kan zien waar het fout gaat.
                 apiResponse = await client.SendAsync(message);
