@@ -12,11 +12,12 @@ using Microsoft.EntityFrameworkCore;
 using System.Net;
 
 namespace MagicVilla_API.Controllers
-{    
-    [Route("api/VillaNumberAPI")]
+{
+    //[Route("api/VillaNumberAPI")] not working
+    [Route("api/v{version:apiVersion}/VillaNumberAPI")]
     [ApiController]
     [ApiVersion("1.0")]
-    //[ApiVersion("2.0")]
+    [ApiVersion("2.0")]
     public class VillaNumberAPIController : ControllerBase
     {
         // Alle ReturnTypes worden nu _response
@@ -35,6 +36,7 @@ namespace MagicVilla_API.Controllers
 
         // Dit is een HttpGet endpoint
         [HttpGet]
+        [MapToApiVersion("1.0")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult<APIResponse>> GetVillaNumbers()
         {
@@ -51,6 +53,13 @@ namespace MagicVilla_API.Controllers
                 _response.ErrorMessages = new List<string>() { ex.ToString() };
             }
             return _response;
+        }
+
+        [MapToApiVersion("2.0")]
+        [HttpGet]
+        public IEnumerable<string> Get()
+        {
+            return new string[] { "value1", "value2" };
         }
 
         // Voor een enkele villa is een id verplicht
