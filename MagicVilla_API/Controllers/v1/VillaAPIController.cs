@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Text.Json;
 
 namespace MagicVilla_API.Controllers.v1
 {
@@ -59,6 +60,9 @@ namespace MagicVilla_API.Controllers.v1
                     villaList = villaList.Where(u => u.Name.ToLower().Contains(search));
                 }
                 
+                Pagination pagination = new () { PageNumber = pageNumber, PageSize = pageSize };
+
+                Response.Headers.Add("X-Pagination", JsonSerializer.Serialize(pagination));
                 _response.Result = _mapper.Map<List<VillaDTO>>(villaList);
                 _response.StatusCode = HttpStatusCode.OK;
                 return Ok(_response);
