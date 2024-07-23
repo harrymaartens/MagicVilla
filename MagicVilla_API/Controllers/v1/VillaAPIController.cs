@@ -33,7 +33,7 @@ namespace MagicVilla_API.Controllers.v1
 
         // Dit is een HttpGet endpoint
         [HttpGet]
-        //[Authorize]
+        [ResponseCache(CacheProfileName = "Default30")]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -63,6 +63,7 @@ namespace MagicVilla_API.Controllers.v1
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         //[ProducesResponseType(200, Type = typeof(VillaDTO))]
+        //[ResponseCache(Duration = 30, Location = ResponseCacheLocation.None, NoStore = true)]
         public async Task<ActionResult<APIResponse>> GetVilla(int id)
         {
             try
