@@ -2,7 +2,6 @@
 using MagicVilla_API.Models.Dto;
 using MagicVilla_API.Models;
 using MagicVilla_API.Repository.IRepostiory;
-using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -76,8 +75,7 @@ namespace MagicVilla_API.Repository
             LoginResponseDTO loginResponseDTO = new LoginResponseDTO()
             {
                 Token = tokenHandler.WriteToken(token),
-                User = _mapper.Map<UserDTO>(user),
-                //Role = roles.FirstOrDefault()
+                User = _mapper.Map<UserDTO>(user)
             };
             return loginResponseDTO;
         }
