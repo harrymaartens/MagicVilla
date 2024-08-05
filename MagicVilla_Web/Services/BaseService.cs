@@ -4,6 +4,7 @@ using MagicVilla_Web.Services.IServices;
 using Newtonsoft.Json;
 using System.Net.Http.Headers;
 using System.Text;
+using static MagicVilla_Utility.SD;
 
 namespace MagicVilla_Web.Services
 {
@@ -13,7 +14,7 @@ namespace MagicVilla_Web.Services
 
         // De HttpClientFactory is onderdeel van DI
         public IHttpClientFactory httpClient { get; set; }
-        
+
         public BaseService(IHttpClientFactory httpClient)
         {
             this.responseModel = new();
@@ -26,14 +27,49 @@ namespace MagicVilla_Web.Services
             {
                 var client = httpClient.CreateClient("MagicAPI");
                 HttpRequestMessage message = new HttpRequestMessage();
-                message.Headers.Add("Accept", "application/json");
-                message.RequestUri = new Uri(apiRequest.Url);
-                if (apiRequest.Data != null)
+                if (apiRequest.ContentType == SD.ContentType.MultipartFormData)
                 {
-                    // Data will not be null in POST/PUT HTTP calls.
-                    message.Content = new StringContent(JsonConvert.SerializeObject(apiRequest.Data),
-                        Encoding.UTF8, "application/json");
+                    message.Headers.Add("Accept", "*/*");
                 }
+                else
+                {
+                    message.Headers.Add("Accept", "application/json");
+                }
+                //message.Headers.Add("Accept", "application/json");
+                message.RequestUri = new Uri(apiRequest.Url);
+
+                if (apiRequest.ContentType == ContentType.MultipartFormData)
+                {
+                    var content = new MultipartFormDataContent();
+
+                    foreach (var prop in apiRequest.Data.GetType().GetProperties())
+                    {
+                        var value = prop.GetValue(apiRequest.Data);
+                        if (value is FormFile)
+                        {
+                            var file = (FormFile)value;
+                            if (file != null)
+                            {
+                                content.Add(new StreamContent(file.OpenReadStream()), prop.Name, file.FileName);
+                            }
+                        }
+                        else
+                        {
+                            content.Add(new StringContent(value == null ? "" : value.ToString()), prop.Name);
+                        }
+                    }
+                    message.Content = content;
+                }
+                else
+                {
+                    if (apiRequest.Data != null)
+                    {
+                        // Data will not be null in POST/PUT HTTP calls.
+                        message.Content = new StringContent(JsonConvert.SerializeObject(apiRequest.Data),
+                            Encoding.UTF8, "application/json");
+                    }
+                }
+
                 // Een API request is een enum, die we vinden in SD, waardoor we een switch condition kunnen maken.
                 switch (apiRequest.ApiType)
                 {
@@ -50,11 +86,12 @@ namespace MagicVilla_Web.Services
                         message.Method = HttpMethod.Get;
                         break;
                 }
+
                 HttpResponseMessage apiResponse = null;
 
                 // API can validate
                 if (!string.IsNullOrEmpty(apiRequest.Token))
-                { 
+                {
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiRequest.Token);
                 }
 
@@ -73,18 +110,18 @@ namespace MagicVilla_Web.Services
                     {
                         ApiResponse.StatusCode = System.Net.HttpStatusCode.BadRequest;
                         ApiResponse.IsSuccess = false;
-						var res = JsonConvert.SerializeObject(ApiResponse);
-						var returnObj = JsonConvert.DeserializeObject<T>(res);
-						return returnObj;
-					}
-				}
-				catch (Exception e)
+                        var res = JsonConvert.SerializeObject(ApiResponse);
+                        var returnObj = JsonConvert.DeserializeObject<T>(res);
+                        return returnObj;
+                    }
+                }
+                catch (Exception e)
                 {
-					var exceptionResponse= JsonConvert.DeserializeObject<T>(apiContent);
+                    var exceptionResponse = JsonConvert.DeserializeObject<T>(apiContent);
                     return exceptionResponse;
-				}
-				var APIResponse = JsonConvert.DeserializeObject<T>(apiContent);
-				return APIResponse;
+                }
+                var APIResponse = JsonConvert.DeserializeObject<T>(apiContent);
+                return APIResponse;
             }
             catch (Exception e)
             {

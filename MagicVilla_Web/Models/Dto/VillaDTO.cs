@@ -21,8 +21,9 @@ namespace MagicVilla_Web.Models.Dto
         // Square feet = Vierkante meter
         public int Sqft { get; set; }
 
-        public string ImageUrl { get; set; }
-
+        public string? ImageUrl { get; set; }
+        public string? ImageLocalPath { get; set; }
+        
         // Voorzieningen
         public string Amenity { get; set; }
     }
