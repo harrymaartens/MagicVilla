@@ -34,7 +34,7 @@ namespace MagicVilla_API.Controllers.v1
 
         // Dit is een HttpGet endpoint
         [HttpGet]
-        [ResponseCache(CacheProfileName = "Default30")]
+        //[ResponseCache(CacheProfileName = "Default30")]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status200OK)]
