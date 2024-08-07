@@ -25,7 +25,7 @@ namespace MagicVilla_Web.Controllers
             List<VillaDTO> list = new();
 
             // Als het fout gaat ga naar BaseService en zet een breakpoint op Line 51
-            var response = await _villaService.GetAllAsync<APIResponse>(HttpContext.Session.GetString(SD.SessionToken));
+            var response = await _villaService.GetAllAsync<APIResponse>();
             if (response != null && response.IsSuccess)
             {
                 list = JsonConvert.DeserializeObject<List<VillaDTO>>(Convert.ToString(response.Result));

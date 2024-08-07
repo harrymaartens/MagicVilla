@@ -12,16 +12,19 @@ namespace MagicVilla_Web.Services
     {
         public APIResponse responseModel { get; set; }
 
+        private readonly ITokenProvider _tokenProvider;
+
         // De HttpClientFactory is onderdeel van DI
         public IHttpClientFactory httpClient { get; set; }
 
-        public BaseService(IHttpClientFactory httpClient)
+        public BaseService(IHttpClientFactory httpClient, ITokenProvider tokenProvider)
         {
-            this.responseModel = new();
-            this.httpClient = httpClient;
+			_tokenProvider = tokenProvider;
+			this.responseModel = new();
+            this.httpClient = httpClient;            
         }
 
-        public async Task<T> SendAsync<T>(APIRequest apiRequest)
+        public async Task<T> SendAsync<T>(APIRequest apiRequest, bool withBearer = true)
         {
             try
             {
@@ -37,6 +40,12 @@ namespace MagicVilla_Web.Services
                 }
                 //message.Headers.Add("Accept", "application/json");
                 message.RequestUri = new Uri(apiRequest.Url);
+
+                if (withBearer && _tokenProvider.GetToken() != null)
+                {
+                    var token = _tokenProvider.GetToken();
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+                }
 
                 if (apiRequest.ContentType == ContentType.MultipartFormData)
                 {
