@@ -62,5 +62,31 @@ namespace MagicVilla_API.Controllers
             _response.IsSuccess = true;
             return Ok(_response);
         }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> GetNewTokenFromRefreshToken([FromBody] TokenDTO tokenDTO)
+        {
+            if (ModelState.IsValid)
+            {
+                var tokenDTOResponse = await _userRepo.RefreshAccesToken(tokenDTO);
+                if (tokenDTO == null || string.IsNullOrEmpty(tokenDTOResponse.AccessToken))
+                {
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    _response.IsSuccess = false;
+                    _response.ErrorMessages.Add("Username already exists");
+                    return BadRequest(_response);
+                }
+                _response.StatusCode = HttpStatusCode.OK;
+                _response.IsSuccess = true;
+                _response.Result = tokenDTO;
+                return Ok(_response);
+            }
+            else 
+            {
+                _response.IsSuccess = false;
+                _response.Result = "Invalid Input";
+                return BadRequest(_response);
+            }            
+        }
     }
 }
