@@ -24,8 +24,8 @@ namespace MagicVilla_API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequestDTO model)
         {
-            var tokenDTO = await _userRepo.Login(model);
-            if (tokenDTO == null || string.IsNullOrEmpty(tokenDTO.AccessToken))
+            var tokenDto = await _userRepo.Login(model);
+            if (tokenDto == null || string.IsNullOrEmpty(tokenDto.AccessToken))
             {
                 _response.StatusCode = HttpStatusCode.BadRequest;
                 _response.IsSuccess = false;
@@ -34,7 +34,7 @@ namespace MagicVilla_API.Controllers
             }
             _response.StatusCode = HttpStatusCode.OK;
             _response.IsSuccess = true;
-            _response.Result = tokenDTO;
+            _response.Result = tokenDto;
             return Ok(_response);
         }
 
@@ -69,16 +69,16 @@ namespace MagicVilla_API.Controllers
             if (ModelState.IsValid)
             {
                 var tokenDTOResponse = await _userRepo.RefreshAccesToken(tokenDTO);
-                if (tokenDTO == null || string.IsNullOrEmpty(tokenDTOResponse.AccessToken))
+                if (tokenDTOResponse == null || string.IsNullOrEmpty(tokenDTOResponse.AccessToken))
                 {
                     _response.StatusCode = HttpStatusCode.BadRequest;
                     _response.IsSuccess = false;
-                    _response.ErrorMessages.Add("Username already exists");
+                    _response.ErrorMessages.Add("Token Invalid");
                     return BadRequest(_response);
                 }
                 _response.StatusCode = HttpStatusCode.OK;
                 _response.IsSuccess = true;
-                _response.Result = tokenDTO;
+                _response.Result = tokenDTOResponse;
                 return Ok(_response);
             }
             else 
