@@ -211,7 +211,7 @@ namespace MagicVilla_API.Repository
                 IsValid = true,
                 UserId = userId,
                 JwtTokenId = tokenId,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(3),
+                ExpiresAt = DateTime.UtcNow.AddMinutes(5),
                 Refresh_Token = Guid.NewGuid() + "-" + Guid.NewGuid()
             };
 
