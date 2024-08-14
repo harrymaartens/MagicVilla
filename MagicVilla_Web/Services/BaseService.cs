@@ -13,6 +13,7 @@ using System.Runtime.Intrinsics.X86;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Net;
 
 namespace MagicVilla_Web.Services
 {
@@ -61,11 +62,12 @@ namespace MagicVilla_Web.Services
                     //message.Headers.Add("Accept", "application/json");
                     message.RequestUri = new Uri(apiRequest.Url);
 
-                    if (withBearer && _tokenProvider.GetToken() != null)
-                    {
-                        var token = _tokenProvider.GetToken();
-                        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-                    }
+                    // This will conflict with the new token
+                    //if (withBearer && _tokenProvider.GetToken() != null)
+                    //{
+                    //    var token = _tokenProvider.GetToken();
+                    //    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+                    //}
 
                     if (apiRequest.ContentType == ContentType.MultipartFormData)
                     {
@@ -118,35 +120,56 @@ namespace MagicVilla_Web.Services
                     return message;
                 };
 
-                HttpResponseMessage apiResponse = null;                
+                HttpResponseMessage httpResponseMessage = null;           
+                
+
+
 
                 // Bij een error zet hier een breakpoint, zodat je kan zien waar het fout gaat.
-                apiResponse = await SendWithRefreshTokenAsync(client, messageFactory, withBearer);
+                httpResponseMessage = await SendWithRefreshTokenAsync(client, messageFactory, withBearer);
+
+                APIResponse FinalApiResponse = new()
+                {
+                    IsSuccess = false
+                };
 
                 // This API content will have to deserialize that and once we deserialize it should
-                // be the model which is APIResponse. 
-                var apiContent = await apiResponse.Content.ReadAsStringAsync();
+                // be the model which is APIResponse.                
                 try
                 {
-                    // So we will deserialize that object and we will call the variable as APIResponse. 
-                    APIResponse ApiResponse = JsonConvert.DeserializeObject<APIResponse>(apiContent);
-                    if (ApiResponse != null && (apiResponse.StatusCode == System.Net.HttpStatusCode.BadRequest
-                        || apiResponse.StatusCode == System.Net.HttpStatusCode.NotFound))
+                    switch (httpResponseMessage.StatusCode)
                     {
-                        ApiResponse.StatusCode = System.Net.HttpStatusCode.BadRequest;
-                        ApiResponse.IsSuccess = false;
-                        var res = JsonConvert.SerializeObject(ApiResponse);
-                        var returnObj = JsonConvert.DeserializeObject<T>(res);
-                        return returnObj;
-                    }
-                }
+                        case HttpStatusCode.NotFound:
+                            FinalApiResponse.ErrorMessages = new List<string>() { "Not Found" };
+                            break;
+                        case HttpStatusCode.Forbidden:
+                            FinalApiResponse.ErrorMessages = new List<string>() { "Access Denied" };
+                            break;
+                        case HttpStatusCode.Unauthorized:
+                            FinalApiResponse.ErrorMessages = new List<string>() { "Unauthorized" };
+                            break;
+                        case HttpStatusCode.InternalServerError:
+                            FinalApiResponse.ErrorMessages = new List<string>() { "Internal Server Error" };
+                            break;
+                        default:
+                            var apiContent = await httpResponseMessage.Content.ReadAsStringAsync();
+                            FinalApiResponse.IsSuccess = true;
+                            // So we will deserialize that object and we will call the variable as FinalAPIResponse. 
+                            FinalApiResponse = JsonConvert.DeserializeObject<APIResponse>(apiContent);
+                            break;
+                    }                    
+                }                
                 catch (Exception e)
                 {
-                    var exceptionResponse = JsonConvert.DeserializeObject<T>(apiContent);
-                    return exceptionResponse;
+                    FinalApiResponse.ErrorMessages = new List<string>() { "Error Encountered", e.Message.ToString() };
                 }
-                var APIResponse = JsonConvert.DeserializeObject<T>(apiContent);
-                return APIResponse;
+                var res = JsonConvert.SerializeObject(FinalApiResponse);
+                var returnObj = JsonConvert.DeserializeObject<T>(res);
+                return returnObj;               
+            }
+            catch (AuthException)
+            {
+                throw;
             }
             catch (Exception e)
             {
@@ -195,9 +218,11 @@ namespace MagicVilla_Web.Services
                         response = await httpClient.SendAsync(httpRequestMessageFactory());
                         return response;
                     }
-
                     return response;
-
+                }
+                catch (AuthException)
+                {
+                    throw;
                 }
                 catch (HttpRequestException httpRequestException)
                 {
@@ -237,6 +262,7 @@ namespace MagicVilla_Web.Services
                 await _httpContextAccessor.HttpContext.SignOutAsync();
                 // We need to clear the token as well.
                 _tokenProvider.ClearToken();
+                throw new AuthException();
             }
             else
             {
