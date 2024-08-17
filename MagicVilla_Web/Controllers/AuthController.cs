@@ -96,7 +96,8 @@ namespace MagicVilla_Web.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync();
-            //HttpContext.Session.SetString(SD.AccessToken, "");
+            var token = _tokenProvider.GetToken();
+            await _authService.LogoutAsync<APIResponse>(token);
             _tokenProvider.ClearToken();
             return RedirectToAction("Index", "Home");
         }

@@ -53,6 +53,7 @@ namespace MagicVilla_Web.Controllers
 					return RedirectToAction(nameof(IndexVilla));
 				}
 			}
+            // If you notice we have added temp data and we are using notification.
             TempData["error"] = "Error encountered.";
             return View(model);
 		}

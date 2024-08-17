@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Net;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using System;
 
 namespace MagicVilla_Web.Services
 {
@@ -21,6 +23,7 @@ namespace MagicVilla_Web.Services
     {
         public APIResponse responseModel { get; set; }
         private readonly ITokenProvider _tokenProvider;
+        private readonly IApiMessageRequestBuilder _apiMessageRequestBuilder;
 
         // protected: Dit veld is toegankelijk binnen de klasse zelf en in afgeleide klassen.
         protected readonly string VillaApiUrl;
@@ -30,13 +33,14 @@ namespace MagicVilla_Web.Services
         public IHttpClientFactory httpClient { get; set; }
 
         public BaseService(IHttpClientFactory httpClient, ITokenProvider tokenProvider, IConfiguration configuration,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor, IApiMessageRequestBuilder apiMessageRequestBuilder)
         {
             _httpContextAccessor = httpContextAccessor;
 			_tokenProvider = tokenProvider;
 			this.responseModel = new();
             VillaApiUrl = configuration.GetValue<string>("ServiceUrls:VillaAPI");
-            this.httpClient = httpClient;            
+            this.httpClient = httpClient;
+            _apiMessageRequestBuilder = apiMessageRequestBuilder;
         }
 
         public async Task<T> SendAsync<T>(APIRequest apiRequest, bool withBearer = true)
@@ -50,91 +54,22 @@ namespace MagicVilla_Web.Services
                 // So if we have to retry request, then we must create a new message object.
                 var messageFactory = () =>
                 {
-                    HttpRequestMessage message = new();
-                    if (apiRequest.ContentType == SD.ContentType.MultipartFormData)
-                    {
-                        message.Headers.Add("Accept", "*/*");
-                    }
-                    else
-                    {
-                        message.Headers.Add("Accept", "application/json");
-                    }
-                    //message.Headers.Add("Accept", "application/json");
-                    message.RequestUri = new Uri(apiRequest.Url);
-
-                    // This will conflict with the new token
-                    //if (withBearer && _tokenProvider.GetToken() != null)
-                    //{
-                    //    var token = _tokenProvider.GetToken();
-                    //    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-                    //}
-
-                    if (apiRequest.ContentType == ContentType.MultipartFormData)
-                    {
-                        var content = new MultipartFormDataContent();
-
-                        foreach (var prop in apiRequest.Data.GetType().GetProperties())
-                        {
-                            var value = prop.GetValue(apiRequest.Data);
-                            if (value is FormFile)
-                            {
-                                var file = (FormFile)value;
-                                if (file != null)
-                                {
-                                    content.Add(new StreamContent(file.OpenReadStream()), prop.Name, file.FileName);
-                                }
-                            }
-                            else
-                            {
-                                content.Add(new StringContent(value == null ? "" : value.ToString()), prop.Name);
-                            }
-                        }
-                        message.Content = content;
-                    }
-                    else
-                    {
-                        if (apiRequest.Data != null)
-                        {
-                            // Data will not be null in POST/PUT HTTP calls.
-                            message.Content = new StringContent(JsonConvert.SerializeObject(apiRequest.Data),
-                                Encoding.UTF8, "application/json");
-                        }
-                    }
-
-                    // Een API request is een enum, die we vinden in SD, waardoor we een switch condition kunnen maken.
-                    switch (apiRequest.ApiType)
-                    {
-                        case SD.ApiType.POST:
-                            message.Method = HttpMethod.Post;
-                            break;
-                        case SD.ApiType.PUT:
-                            message.Method = HttpMethod.Put;
-                            break;
-                        case SD.ApiType.DELETE:
-                            message.Method = HttpMethod.Delete;
-                            break;
-                        default:
-                            message.Method = HttpMethod.Get;
-                            break;
-                    }
-                    return message;
+                    return _apiMessageRequestBuilder.Build(apiRequest);
                 };
 
-                HttpResponseMessage httpResponseMessage = null;           
-                
-
-
-
-                // Bij een error zet hier een breakpoint, zodat je kan zien waar het fout gaat.
+                HttpResponseMessage httpResponseMessage = null;
+                                
                 httpResponseMessage = await SendWithRefreshTokenAsync(client, messageFactory, withBearer);
 
                 APIResponse FinalApiResponse = new()
                 {
+                    // And then if you notice when we created API response here, we set the success to be false.
                     IsSuccess = false
                 };
 
                 // This API content will have to deserialize that and once we deserialize it should
-                // be the model which is APIResponse.                
+                // be the model which is APIResponse. That will be true for all the condition here,
+                // but for default we will have to set that to be true.           
                 try
                 {
                     switch (httpResponseMessage.StatusCode)
@@ -161,6 +96,7 @@ namespace MagicVilla_Web.Services
                 }                
                 catch (Exception e)
                 {
+                    // let me create a generic error message. Error encountered. We do not want to return anything.
                     FinalApiResponse.ErrorMessages = new List<string>() { "Error Encountered", e.Message.ToString() };
                 }
                 var res = JsonConvert.SerializeObject(FinalApiResponse);
@@ -220,6 +156,9 @@ namespace MagicVilla_Web.Services
                     }
                     return response;
                 }
+                // Now, here you cannot catch the other exception after exception, because exception
+                // will catch all the exceptions. So that way, if you want to catch this, you have
+                // to catch that before it catches all the other exception.
                 catch (AuthException)
                 {
                     throw;

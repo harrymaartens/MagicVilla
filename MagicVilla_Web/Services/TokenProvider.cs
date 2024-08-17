@@ -13,7 +13,6 @@ namespace MagicVilla_Web.Services
 			_contextAccessor = contextAccessor;
 		}
 
-
 		public void ClearToken()
 		{
 			_contextAccessor.HttpContext?.Response.Cookies.Delete(SD.AccessToken);
