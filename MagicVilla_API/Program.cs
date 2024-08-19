@@ -1,14 +1,17 @@
 using MagicVilla_API;
 using MagicVilla_API.Data;
+using MagicVilla_API.Filters;
 using MagicVilla_API.Models;
 using MagicVilla_API.Repository;
 using MagicVilla_API.Repository.IRepostiory;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using System.Text;
 
@@ -62,13 +65,15 @@ builder.Services.AddAuthentication(x =>
 
 builder.Services.AddControllers(option =>
 {
-    //option.CacheProfiles.Add("Default30",
-    //    new CacheProfile()
-    //    {
-    //        Duration = 30
-    //    });
-    //option.ReturnHttpNotAcceptable=true;
-}).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters();
+    option.Filters.Add<CustomExceptionFilter>();
+}).AddNewtonsoftJson().AddXmlDataContractSerializerFormatters().
+    ConfigureApiBehaviorOptions(option =>
+    {
+        option.ClientErrorMapping[StatusCodes.Status500InternalServerError] = new ClientErrorData
+        {
+            Link = "https://dotnetmastery.com/500"
+        };
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -82,9 +87,50 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options => {
         options.SwaggerEndpoint("/swagger/v2/swagger.json", "Magic_VillaV2");
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Magic_VillaV1");        
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Magic_VillaV1");
     });
 }
+else
+{
+    app.UseSwaggerUI(options => {
+        options.SwaggerEndpoint("/swagger/v2/swagger.json", "Magic_VillaV2");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Magic_VillaV1");
+        options.RoutePrefix = "";
+    });
+}
+
+//app.UseExceptionHandler("/ErrorHandling/ProcessError");
+
+app.UseExceptionHandler(error =>
+{
+    error.Run(async context =>
+    {
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+        var feature = context.Features.Get<IExceptionHandlerFeature>();
+        if (feature != null)
+        {
+            if (app.Environment.IsDevelopment())
+            {
+                await context.Response.WriteAsync(JsonConvert.SerializeObject(new
+                {
+                    StatusCode = context.Response.StatusCode,
+                    ErrorMessage = feature.Error.Message,
+                    StackTrace = feature.Error.StackTrace
+                }));
+            }
+            else
+            {
+                await context.Response.WriteAsync(JsonConvert.SerializeObject(new
+                {
+                    Statuscode = context.Response.StatusCode,
+                    ErrorMessage = "Hello From Program.cs Exception Handler"
+                }));
+            }
+        }
+    });
+});
+
 
 app.UseStaticFiles();
 app.UseHttpsRedirection();
